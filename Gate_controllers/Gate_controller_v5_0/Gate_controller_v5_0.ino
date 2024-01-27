@@ -148,7 +148,7 @@ void output_driver () {
         output_garage_driver_mode = 0;
       } 
       break;
-    case 4: // open rigth gate by timer
+    case 4: // open wicket by timer
       analogWrite(garage_output_pin, 230);
       if (garage_wicket_tm.ready(garage_wicket_delay)) {
         output_garage_driver_mode = 0;
