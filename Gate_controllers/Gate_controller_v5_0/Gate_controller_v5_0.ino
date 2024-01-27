@@ -83,12 +83,6 @@ void setup() {
   pinMode(right_relay_pin, OUTPUT);
   pinMode(garage_output_pin, OUTPUT);
   pinMode(LED_pin, OUTPUT);
-  //test test test
-  digitalWrite(left_relay_pin, LOW);
-  delay(1000);
-  digitalWrite(left_relay_pin, HIGH);
-  //initGSM();
-  //digitalWrite(right_relay_pin, LOW);
 }
 
 void loop() {
