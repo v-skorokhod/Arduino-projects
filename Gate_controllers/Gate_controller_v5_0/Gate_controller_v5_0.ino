@@ -1,4 +1,4 @@
-String filenameIDE = "Gate_controller_v4_5A"; // ИЗМЕНЯТЬ ПОСЛЕ ИЗМЕНЕНИЯ НАЗВАНИЯ ФАЙЛА !!! ####################################################################
+String filenameIDE = "Gate_contr._v5_0"; // ИЗМЕНЯТЬ ПОСЛЕ ИЗМЕНЕНИЯ НАЗВАНИЯ ФАЙЛА !!! ####################################################################
 const bool TEST = false;
 
 //#include "GSM.h"
@@ -25,9 +25,14 @@ svsTimer gate_tm;
 #define open_gate_delay 4000 // ms (задержка открывания створок)
 #define button_hold_delay 35000 // ms (время удержания кнопки)
 #define wicket_delay 15000 // ms (время открытия калитки кнопки)
+
+#define garage_button_hold_delay 30000 // ms (время удержания кнопки гаражных ворот)
+#define garage_wicket_delay 24000 // ms (время открытия калитки гаражных ворот)
 bool start_stat = false;
 svsTimer button_hold_tm;
+svsTimer garage_button_hold_tm;
 svsTimer wicket_tm;
+svsTimer garage_wicket_tm;
 float set_current_val = 0.0; // A
 #define HC_OFFSET 3.0 // A (High Current mode offset) 
 byte prev_button_stat;
@@ -39,6 +44,7 @@ byte button_emulator_val = 0;
 bool button_emulator_stat = false;
 svsTimer button_emulator_t;
 int output_driver_mode, prev_output_driver_mode;
+int output_garage_driver_mode;
 String output_driver_mode_str;
 
 void startDesktop () {
@@ -101,34 +107,54 @@ void loop() {
 
 void output_driver () {
   if (current_button) {
-    if (current_button == 10) {
-      output_driver_mode = 1;
+    if (current_button == 80) {
       set_current_val = HC_OFFSET;
-      right_gate.reset_error();
-      left_gate.reset_error();
-    } else if (current_button == 20) {
-      output_driver_mode = 2;
-      set_current_val = HC_OFFSET;
-      right_gate.reset_error();
-      left_gate.reset_error();
-    } else if (current_button == 40) {
-      output_driver_mode = 4;
-      set_current_val = HC_OFFSET;
-      right_gate.reset_error();
-      left_gate.reset_error();
-    } else if (current_button == 80) {
-      GARAGE_MODE = true;
-    } else {
+    } else if (current_button == 8) {
+      output_driver_mode = 0;
+      output_garage_driver_mode = 0;
+    } else if (current_button < 10) {
       output_driver_mode = current_button;
+      right_gate.reset_error();
+      left_gate.reset_error();
       set_current_val = 0.0;
+      start_stat = false;
+      button_hold_tm.reset();
+      wicket_tm.reset(); 
+      gate_tm.reset(); 
+    } else {
+      output_garage_driver_mode = current_button / 10;
+      garage_button_hold_tm.reset();
+      garage_wicket_tm.reset();
     }
-    start_stat = false;
-    button_hold_tm.reset();
-    wicket_tm.reset(); //added
-    gate_tm.reset(); 
   } 
   right_gate.set_current(set_current_val);
   left_gate.set_current(set_current_val);
+
+  switch (output_garage_driver_mode) {
+    case 0: // stop
+      analogWrite(garage_output_pin, 128);
+      garage_button_hold_tm.reset();
+      garage_wicket_tm.reset();
+      break;
+    case 1: // open by timer
+      analogWrite(garage_output_pin, 230);
+      if (garage_button_hold_tm.ready(garage_button_hold_delay)) {
+        output_garage_driver_mode = 0;
+      } 
+      break;
+    case 2: // close by timer
+      analogWrite(garage_output_pin, 25);
+      if (garage_button_hold_tm.ready(garage_button_hold_delay)) {
+        output_garage_driver_mode = 0;
+      } 
+      break;
+    case 4: // open rigth gate by timer
+      analogWrite(garage_output_pin, 230);
+      if (garage_wicket_tm.ready(garage_wicket_delay)) {
+        output_garage_driver_mode = 0;
+      } 
+      break;
+  } 
 
   switch (output_driver_mode) {
     case 0: // stop
@@ -136,7 +162,6 @@ void output_driver () {
       digitalWrite(right_relay_pin, HIGH);
       right_gate.set(0);
       left_gate.set(0);
-      analogWrite(garage_output_pin, 128);
       start_stat = false;
       right_gate.reset_error();
       left_gate.reset_error();
@@ -144,16 +169,11 @@ void output_driver () {
       button_hold_tm.reset();
       wicket_tm.reset();
       output_driver_mode_str = "* STOPPED"; 
-      if (GARAGE_MODE == true) set_LED_color(1);
-      else set_LED_color(0);
       break;
    case 1: // open by timer
-      if (GARAGE_MODE == false) {
-        digitalWrite(left_relay_pin, LOW);
-        digitalWrite(right_relay_pin, LOW);
-      } else {
-        analogWrite(garage_output_pin, 230);
-      }
+      digitalWrite(left_relay_pin, LOW);
+      digitalWrite(right_relay_pin, LOW);
+
       right_gate.set(100);
       if (gate_tm.ready(open_gate_delay)) start_stat = true; // left gate delay 
       if (start_stat) left_gate.set(100); 
@@ -161,7 +181,6 @@ void output_driver () {
 
       if (button_hold_tm.ready(button_hold_delay)) {
         output_driver_mode = 0;
-        GARAGE_MODE = false;
       } 
       //if (left_gate.finished()) left_gate.set(0);
       //if (right_gate.finished()) right_gate.set(0);
@@ -179,12 +198,9 @@ void output_driver () {
       }
       break;
     case 2: // close by timer
-      if (GARAGE_MODE == false) {
-        digitalWrite(left_relay_pin, LOW);
-        digitalWrite(right_relay_pin, LOW);
-      } else {
-        analogWrite(garage_output_pin, 25);
-      }
+      digitalWrite(left_relay_pin, LOW);
+      digitalWrite(right_relay_pin, LOW);
+
       left_gate.set(-100);
       if (right_gate.position() >= (left_gate.position() + 30.0) || left_gate.position() == 0) {
         if (gate_tm.ready(open_gate_delay)) start_stat = true; //                                right gate delay 
@@ -195,7 +211,6 @@ void output_driver () {
       }
       if (button_hold_tm.ready(button_hold_delay)) {
         output_driver_mode = 0;
-        GARAGE_MODE = false;
       } 
 
       if (left_gate.error_check() || right_gate.error_check()) {
@@ -211,16 +226,12 @@ void output_driver () {
       }
       break;
     case 4: // open rigth gate by timer
-      if (GARAGE_MODE == false) {
-        digitalWrite(right_relay_pin, LOW);
-      } else {
-        analogWrite(garage_output_pin, 230);
-      }
+      digitalWrite(left_relay_pin, HIGH);
+      digitalWrite(right_relay_pin, LOW);
       right_gate.set(100);
       left_gate.set(0); 
       if (wicket_tm.ready(wicket_delay)) {
         output_driver_mode = 0;
-        GARAGE_MODE = false;
       } 
       if (left_gate.error_check() || right_gate.error_check()) {
         set_LED_color(3); 
@@ -233,11 +244,6 @@ void output_driver () {
           set_LED_color(2);
         }
       }
-      break;
-    case 8: // stop everything
-      output_driver_mode = 0;
-      output_driver_mode_str = "* STOPPING";
-      GARAGE_MODE = false;
       break;
   }  
 }
