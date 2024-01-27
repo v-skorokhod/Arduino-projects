@@ -22,7 +22,7 @@ output_controller left_gate;
 output_controller right_gate;
 int current_button, prev_current_button;
 svsTimer gate_tm;
-#define open_gate_delay 2000 // ms (задержка открывания створок)
+#define open_gate_delay 4000 // ms (задержка открывания створок)
 #define button_hold_delay 35000 // ms (время удержания кнопки)
 #define wicket_delay 15000 // ms (время открытия калитки кнопки)
 bool start_stat = false;
