@@ -28,14 +28,14 @@ byte MODULE_ID;
 #define l_end_sw_pin A3
 #define m_led_pin A0
 #define m_IO_DATA_pin 9
-byte m_button_pin[BUT_NUM] = {6,8,4,2}; // open, close, wicket, stop (менять пины местами для соответсвия пульта)
+int m_button_pin[BUT_NUM] = {6,8,4,2}; // open, close, wicket, stop (менять пины местами для соответсвия пульта)
 
 // garage_pins:
 #define power_rl_pin 2
 #define reverse_rl_pin 4
 #define g_led_pin 8
 #define g_IO_DATA_pin 3
-byte g_button_pin[BUT_NUM] = {A0,A1,7,6}; // open_g, close_g, open_m, close_m
+byte g_button_pin[BUT_NUM] = {A1,A0,7,6}; // open_g, close_g, open_m, close_m
 
 #include "Buttons.h"
 

@@ -19,6 +19,8 @@ float set_current_val = 0.0; // A
 //byte output_garage_driver_mode;
 String output_driver_mode_str;
 
+svsButtons m_buttons(m_button_pin,sizeof(m_button_pin));
+
 void show_lcd () {
   for (int i = 0; i < 4; i++) {
     lcd.setCursor(0,i); 
@@ -72,9 +74,9 @@ void output_driver () {
       wicket_tm.reset(); 
       gate_tm.reset(); 
     } else {
-      if (current_button == 10) send_IO_data(1);
-      else if (current_button == 20) send_IO_data(2);
-      else if (current_button == 40) send_IO_data(4);
+      if (current_button == 10) send_IO_data(1); //open
+      else if (current_button == 20) send_IO_data(2); //close
+      else if (current_button == 40) send_IO_data(4); //wicket
     }
   } 
   right_gate.set_current(set_current_val);

@@ -2,13 +2,13 @@ bool BUTTON_MODE = false;
 unsigned int prev_driver_mode;
 
 void open_door () {
-  digitalWrite(reverse_rl_pin, LOW);
+  digitalWrite(reverse_rl_pin, HIGH);
   delay(100);
   digitalWrite(power_rl_pin, HIGH);
 }
 
 void close_door () {
-  digitalWrite(reverse_rl_pin, HIGH);
+  digitalWrite(reverse_rl_pin, LOW);
   delay(100);
   digitalWrite(power_rl_pin, HIGH);
 }
@@ -51,8 +51,10 @@ void garage_gate_loop () {
   if (button_hold_tm.ready(button_hold_delay)) output_driver_mode = 0;
 
   if (IO_button != no_data_val) {
+    button_hold_tm.reset();
+    Serial.println(IO_button);
     switch (IO_button) {
-      case 0: // stop 
+      case 8: // stop 
         output_driver_mode = 0;
         break;
       case 1: // open 
@@ -71,7 +73,7 @@ void garage_gate_loop () {
   else if (output_driver_mode == 2) close_door();
   else if (output_driver_mode == 0) stop_door();
 
-  if (prev_driver_mode != output_driver_mode) {
+  if (prev_driver_mode != output_driver_mode && prev_driver_mode) {
     Serial.println("button changed, stopped for 200ms");
     stop_door();
   }
